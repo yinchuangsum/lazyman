@@ -13,6 +13,7 @@ export default (rawProps: panelProps) => {
     { width: "100%", height: "100%", focused: false },
     rawProps,
   ) as panelProps;
+
   const [local, boxProps] = splitProps(props, [
     "children",
     "width",
