@@ -9,6 +9,7 @@ export type AppState = {
   envFiles: string[];
   parsedRequests: ParsedRequest[];
   selectedRequestIndex: number;
+  parsedRequestIndex: number;
   response: ResponseData | null;
   assertionResults: AssertionResult[];
   historyEntries: HistoryEntry[];
@@ -25,6 +26,7 @@ export const [appStore, setAppStore] = createStore<AppState>({
   envFiles: [],
   parsedRequests: [],
   selectedRequestIndex: 0,
+  parsedRequestIndex: 0,
   response: null,
   assertionResults: [],
   historyEntries: [],

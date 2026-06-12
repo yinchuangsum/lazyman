@@ -18,3 +18,5 @@ export const JSON_KEY_COLOR = "#E06C75";
 export const JSON_STRING_COLOR = "#98C379";
 export const JSON_NUMBER_COLOR = "#D19A66";
 export const ERROR_COLOR = "#E06C75";
+export const HIGHLIGHT_BG = "#89B4FA";
+export const HIGHLIGHT_FG = "#fff";

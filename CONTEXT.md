@@ -37,3 +37,31 @@ A lifecycle script file (`scripts/pre-request.js` or `scripts/post-response.js`)
 
 **Tracer Bullet**:
 An end-to-end test that exercises the core pipeline (parse → resolve → assert) to validate that public interfaces connect before deepening individual modules.
+
+## Patterns
+
+**SolidJS `For` reactivity**:
+
+Inside a `For` template callback, the function body runs once per item at creation time. Plain `const` assignments snapshot at that moment and are never re-evaluated, even if they reference reactive sources like `appStore` or `idx()`.
+
+```tsx
+// WRONG — snapshots, never updates
+<For each={items()}>
+  {(item, idx) => {
+    const isSelected = idx() === store.cursor;  // frozen boolean
+    return <text fg={isSelected ? "#fff" : undefined}>...</text>;
+  }}
+</For>
+
+// CORRECT — derived signals re-read on each access
+<For each={items()}>
+  {(item, idx) => {
+    const isSelected = () => idx() === store.cursor;  // reactive thunk
+    return <text fg={isSelected() ? "#fff" : undefined}>...</text>;
+  }}
+</For>
+```
+
+Turn any `const` inside a `For` that depends on reactive sources (`appStore.*`, `idx()`, signals, memos) into an arrow function, and call it in JSX.
+
+For a full-row highlight, wrap `<text>` in a `<box width="100%" backgroundColor={...}>` — `<text>` alone may not fill the row width.

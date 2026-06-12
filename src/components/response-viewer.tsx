@@ -3,6 +3,7 @@ import { useKeyboard } from "@opentui/solid";
 import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
 import { diffResponses } from "../engine/history";
+import { HIGHLIGHT_BG, HIGHLIGHT_FG } from "../style";
 
 type Tab = "body" | "headers" | "cookies";
 
@@ -193,12 +194,18 @@ export default () => {
                 />
               ) : null}
               <For each={visibleLines()}>
-                {(item, idx) => (
-                  <text>
-                    {idx() === appStore.responseTreeCursor ? "→ " : "  "}
-                    {item.line}
-                  </text>
-                )}
+                {(item, idx) => {
+                  const isSelected = () => idx() === appStore.responseTreeCursor;
+                  const isActive = () => appStore.activePane === Pane.RESPONSE_VIEWER;
+                  return (
+                    <box width="100%" backgroundColor={isSelected() && isActive() ? HIGHLIGHT_BG : undefined}>
+                      <text fg={isSelected() && isActive() ? HIGHLIGHT_FG : undefined}>
+                        {"  "}
+                        {item.line}
+                      </text>
+                    </box>
+                  );
+                }}
               </For>
             </box>
           )}

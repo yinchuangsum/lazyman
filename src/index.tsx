@@ -17,7 +17,11 @@ import { Pane as PaneEnum } from "./utils/panes";
 render(
   () => {
     useKeyboard((key) => {
-      const paneOrder = [PaneEnum.FILE_EXPLORER, PaneEnum.REQUEST_VIEWER, PaneEnum.RESPONSE_VIEWER];
+      const paneOrder = [
+        PaneEnum.FILE_EXPLORER,
+        PaneEnum.REQUEST_VIEWER,
+        PaneEnum.RESPONSE_VIEWER,
+      ];
 
       if (key.name === "tab") {
         const current = paneOrder.indexOf(appStore.activePane);
@@ -49,20 +53,25 @@ render(
     return (
       <box {...style()}>
         {isModal() ? (
-          <Pane width="100%" height="100%" title={"Environment Selector"} focused={true}>
+          <Pane
+            width="100%"
+            height="100%"
+            title={"Environment Selector"}
+            focused={true}
+          >
             <EnvModal />
           </Pane>
         ) : (
           <>
             <Pane
-              width="28%"
+              width="25%"
               height="100%"
               title={"[1] Explorer"}
               focused={appStore.activePane === PaneEnum.FILE_EXPLORER}
             >
               <FileExplorer />
             </Pane>
-            <box width="72%" height="100%" flexDirection="column">
+            <box width="75%" height="100%" flexDirection="column">
               <Pane
                 width="100%"
                 height="40%"

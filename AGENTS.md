@@ -69,3 +69,7 @@ src/
 - **Keyboard routing:** Components use `useKeyboard` and check `appStore.activePane` before acting.
 - **Execution pipeline:** Resolve variables → pre-request script → HTTP → post-response script → assertions → save history.
 - **No centralized test-lint-typecheck scripts** — just `bun test`.
+
+## Agent workflow
+
+- **Evolve docs alongside code:** Every session should include a pass to update `CONTEXT.md` or `AGENTS.md` with any new patterns, domain terms, or decisions discovered during the session. These files are the permanent memory — without them, each agent starts from scratch.

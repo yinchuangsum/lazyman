@@ -3,7 +3,8 @@ import { useKeyboard } from "@opentui/solid";
 import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
 import { parseHttpFile } from "../parser/http-parser";
-import { loadHistoryEntries, diffResponses } from "../engine/history";
+import { loadHistoryEntries } from "../engine/history";
+import { HIGHLIGHT_BG, HIGHLIGHT_FG } from "../style";
 import fs from "fs";
 import path from "path";
 
@@ -25,9 +26,8 @@ export default () => {
         const content = fs.readFileSync(fullPath, "utf-8");
         const parsed = parseHttpFile(content, fullPath);
         setAppStore("parsedRequests", parsed);
+        setAppStore("parsedRequestIndex", 0);
         setAppStore("selectedRequestIndex", 0);
-        setAppStore("activePane", Pane.REQUEST_VIEWER);
-      } else if (item.type === "request") {
         setAppStore("activePane", Pane.REQUEST_VIEWER);
       } else if (item.type === "history") {
         setAppStore("activePane", Pane.RESPONSE_VIEWER);
@@ -64,7 +64,11 @@ export default () => {
   });
 
   const flatItems = createMemo(() => {
-    type Item = { name: string; type: "file" | "request" | "history"; _entry?: import("../types").HistoryEntry };
+    type Item = {
+      name: string;
+      type: "file" | "history";
+      _entry?: import("../types").HistoryEntry;
+    };
     const result: Item[] = [];
     const cwd = process.cwd();
 
@@ -76,14 +80,6 @@ export default () => {
         }
       }
     } catch {}
-
-    if (appStore.parsedRequests.length > 0) {
-      for (let i = 0; i < appStore.parsedRequests.length; i++) {
-        const req = appStore.parsedRequests[i];
-        const label = `  ${req.name || `${req.method} ${req.url}`}`;
-        result.push({ name: label, type: "request" });
-      }
-    }
 
     const history = historyEntries();
     if (history.length > 0) {
@@ -101,13 +97,21 @@ export default () => {
     <box flexDirection="column">
       <For each={flatItems()}>
         {(item, idx) => {
-          const isSelected = idx() === appStore.selectedRequestIndex;
+          const isSelected = () => idx() === appStore.selectedRequestIndex;
+          const isActive = () => appStore.activePane === Pane.FILE_EXPLORER;
           return (
-            <text>
-              {isSelected ? "→ " : "  "}
-              {item.type === "history" ? "⏱ " : ""}
-              {item.name}
-            </text>
+            <box
+              width={"100%"}
+              backgroundColor={
+                isSelected() && isActive() ? HIGHLIGHT_BG : undefined
+              }
+            >
+              <text fg={isSelected() && isActive() ? HIGHLIGHT_FG : undefined}>
+                {"  "}
+                {item.type === "history" ? "⏱ " : ""}
+                {item.name}
+              </text>
+            </box>
           );
         }}
       </For>
@@ -124,9 +128,16 @@ function openInEditor(item: { name: string; type: string } | undefined) {
   }
 
   const cwd = process.cwd();
-  const filePath = path.join(cwd, item.name.endsWith(".http") || item.name.endsWith(".rest") ? item.name : "example.http");
+  const filePath = path.join(
+    cwd,
+    item.name.endsWith(".http") || item.name.endsWith(".rest")
+      ? item.name
+      : "example.http",
+  );
   if (!fs.existsSync(filePath)) {
-    const found = fs.readdirSync(cwd).find((f) => f.endsWith(".http") || f.endsWith(".rest"));
+    const found = fs
+      .readdirSync(cwd)
+      .find((f) => f.endsWith(".http") || f.endsWith(".rest"));
     if (!found) return;
     Bun.spawnSync([editor, path.join(cwd, found)], { env: process.env });
     return;
