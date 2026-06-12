@@ -39,3 +39,5 @@ opencode.json
 opencode.jsonc
 .lazyman/history/
 .lazyman/*
+
+example*.http
