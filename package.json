@@ -5,7 +5,10 @@
   "private": true,
   "scripts": {
     "dev": "bun run --watch src/index.tsx",
-    "dev-console": "SHOW_CONSOLE=true bun run --watch src/index.tsx"
+    "dev-console": "SHOW_CONSOLE=true bun run --watch src/index.tsx",
+    "dev-init": "bun run src/index.tsx init",
+    "test": "bun test --preload=@opentui/solid/preload",
+    "test:watch": "bun test --preload=@opentui/solid/preload --watch"
   },
   "devDependencies": {
     "@types/bun": "latest"

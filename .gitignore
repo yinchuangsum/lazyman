@@ -32,3 +32,10 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# opencode config
+.opencode
+opencode.json
+opencode.jsonc
+.lazyman/history/
+.lazyman/*

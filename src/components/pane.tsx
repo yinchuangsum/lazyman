@@ -2,17 +2,17 @@ import type { BoxRenderable, RenderableOptions } from "@opentui/core";
 import { mergeProps, splitProps, type JSX } from "solid-js";
 import { DEFAULT_BORDER_COLOR, FOCUSED_BORDER_COLOR } from "../style";
 
-export type panelProps = {
+export type PaneProps = {
   children?: JSX.Element;
   title: string;
   focused?: boolean;
 } & RenderableOptions<BoxRenderable>;
 
-export default (rawProps: panelProps) => {
+export default (rawProps: PaneProps) => {
   const props = mergeProps(
     { width: "100%", height: "100%", focused: false },
     rawProps,
-  ) as panelProps;
+  ) as PaneProps;
 
   const [local, boxProps] = splitProps(props, [
     "children",
@@ -31,8 +31,6 @@ export default (rawProps: panelProps) => {
       titleAlignment="left"
       {...boxProps}
     >
-      <text>test</text>
-      <text>isFocus: {!!local.focused ? "true" : "false"}</text>
       {local.children}
     </box>
   );

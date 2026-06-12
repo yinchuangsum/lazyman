@@ -1,0 +1,6 @@
+export enum Pane {
+  FILE_EXPLORER,
+  REQUEST_VIEWER,
+  RESPONSE_VIEWER,
+  ENV_MODAL,
+}
