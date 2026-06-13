@@ -1,15 +1,17 @@
 import { createStore } from "solid-js/store";
-import type { ParsedRequest, ResponseData, AssertionResult, HistoryEntry } from "../types";
+import type { ParsedRequest, ResponseData, AssertionResult, HistoryEntry, HotkeyItem } from "../types";
 import { Pane } from "../utils/panes";
 
 export type AppState = {
   activePane: Pane;
   selectedEnv: string;
   showEnvModal: boolean;
+  showHelpModal: boolean;
   envFiles: string[];
   parsedRequests: ParsedRequest[];
   selectedRequestIndex: number;
   parsedRequestIndex: number;
+  sourceFileIndex: number;
   response: ResponseData | null;
   assertionResults: AssertionResult[];
   historyEntries: HistoryEntry[];
@@ -17,16 +19,20 @@ export type AppState = {
   responseTreeExpanded: Record<string, boolean>;
   error: string | null;
   diffTarget: ResponseData | null;
+  hotkeyBarItems: HotkeyItem[];
+  consumeEnter: boolean;
 };
 
 export const [appStore, setAppStore] = createStore<AppState>({
   activePane: Pane.FILE_EXPLORER,
   selectedEnv: "dev",
   showEnvModal: false,
+  showHelpModal: false,
   envFiles: [],
   parsedRequests: [],
   selectedRequestIndex: 0,
   parsedRequestIndex: 0,
+  sourceFileIndex: -1,
   response: null,
   assertionResults: [],
   historyEntries: [],
@@ -34,4 +40,6 @@ export const [appStore, setAppStore] = createStore<AppState>({
   responseTreeExpanded: {},
   error: null,
   diffTarget: null,
+  hotkeyBarItems: [],
+  consumeEnter: false,
 });

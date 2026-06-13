@@ -2,10 +2,17 @@ import { createMemo, For } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
+import { useHotkeyBar } from "../hooks/useHotkeyBar";
 import fs from "fs";
 import path from "path";
 
 export default () => {
+  useHotkeyBar(Pane.ENV_MODAL, () => [
+    { key: "j/k", label: "Navigate" },
+    { key: "Enter", label: "Select" },
+    { key: "Esc/v", label: "Close" },
+  ]);
+
   useKeyboard((key) => {
     if (!appStore.showEnvModal) return;
 

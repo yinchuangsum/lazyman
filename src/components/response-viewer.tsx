@@ -4,6 +4,7 @@ import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
 import { diffResponses } from "../engine/history";
 import { HIGHLIGHT_BG, HIGHLIGHT_FG } from "../style";
+import { useHotkeyBar } from "../hooks/useHotkeyBar";
 
 type Tab = "body" | "headers" | "cookies";
 
@@ -76,6 +77,14 @@ function flattenTree(nodes: TreeNode[]): { line: string; node: TreeNode }[] {
 }
 
 export default () => {
+  useHotkeyBar(Pane.RESPONSE_VIEWER, () => [
+    { key: "Tab", label: "Switch tab" },
+    { key: "j/k", label: "Navigate" },
+    { key: "Enter", label: "Toggle node" },
+    { key: "/", label: "Filter" },
+    { key: "y", label: "Copy value" },
+  ]);
+
   const [activeTab, setActiveTab] = createSignal<Tab>("body");
   const [showFilter, setShowFilter] = createSignal(false);
   const [filterQuery, setFilterQuery] = createSignal("");

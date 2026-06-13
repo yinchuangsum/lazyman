@@ -1,5 +1,11 @@
 export type HttpMethod = string;
 
+export interface ScriptRef {
+  hook: "pre-request" | "post-response";
+  content: string;
+  sourceLine: number;
+}
+
 export interface ParsedRequest {
   method: string;
   url: string;
@@ -9,6 +15,7 @@ export interface ParsedRequest {
   name?: string;
   assertions: Assertion[];
   inlineVars: Record<string, string>;
+  scripts: ScriptRef[];
   sourceLine: number;
 }
 
@@ -86,4 +93,9 @@ export interface DiffResult {
   bodyChanged: boolean;
 }
 
-export type Pane = "FILE_EXPLORER" | "REQUEST_VIEWER" | "RESPONSE_VIEWER" | "ENV_MODAL";
+export interface HotkeyItem {
+  key: string;
+  label: string;
+}
+
+export type Pane = "FILE_EXPLORER" | "REQUEST_LIST" | "REQUEST_DETAIL" | "RESPONSE_VIEWER" | "ENV_MODAL" | "HELP";

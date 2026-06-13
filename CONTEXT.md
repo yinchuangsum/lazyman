@@ -5,7 +5,7 @@ A local-first TUI HTTP client inspired by lazygit. Operates on flat files in the
 ## Language
 
 **Pane**:
-A fixed, bordered rectangular region in the TUI layout. Three exist: File Explorer, Request Viewer, Response Viewer, plus the Env Modal (overlay).
+A fixed, bordered rectangular region in the TUI layout. Six exist: File Explorer, Request List, Request Detail, Response Viewer, plus the Env Modal and Help Modal (overlays).
 *Avoid*: Panel
 
 **Request Block**:
@@ -37,6 +37,16 @@ A lifecycle script file (`scripts/pre-request.js` or `scripts/post-response.js`)
 
 **Tracer Bullet**:
 An end-to-end test that exercises the core pipeline (parse → resolve → assert) to validate that public interfaces connect before deepening individual modules.
+
+**Source File**:
+The `.http` file whose parsed requests are currently loaded in the Request List pane. Tracked by `sourceFileIndex` in the store. Shown with a dimmed highlight in the File Explorer even when that pane is not focused, so the user sees which file owns the visible requests.
+
+**Hotkey Bar**:
+A single-row status bar at the bottom of the TUI, rendered outside all panes. Displays context-sensitive keybinding hints for the currently active pane. Components publish their bindings via the `useHotkeyBar(pane, () => HotkeyItem[])` hook.
+*Avoid*: Status bar
+
+**Help Modal**:
+A full-screen overlay (like the Env Modal) toggled by `?` from anywhere. Lists every pane's keybindings grouped by section. Closing returns focus to FILE_EXPLORER.
 
 ## Patterns
 

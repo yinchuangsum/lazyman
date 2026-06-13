@@ -115,6 +115,7 @@ function parseBlockLines(lines: string[], name: string | undefined, startLine: n
     name,
     assertions,
     inlineVars,
+    scripts: [],
     sourceLine: startLine,
   };
 }
