@@ -9,12 +9,10 @@ import { useHotkeyBar } from "../hooks/useHotkeyBar";
 import fs from "fs";
 import path from "path";
 
-const SOURCE_FILE_BORDER = "#45475A";
-
 export default () => {
   useHotkeyBar(Pane.FILE_EXPLORER, () => [
     { key: "j/k", label: "Navigate" },
-    { key: "Enter", label: "Open" },
+    { key: "Enter/Space", label: "Open" },
     { key: "e", label: "Edit" },
     { key: "l/→", label: "Quick-parse" },
     { key: "d", label: "Diff" },
@@ -29,13 +27,14 @@ export default () => {
       setAppStore("selectedRequestIndex", Math.min(idx + 1, items.length - 1));
     } else if (key.name === "k" || key.name === "up") {
       setAppStore("selectedRequestIndex", Math.max(idx - 1, 0));
-    } else if (key.name === "enter" || key.name === "space") {
+    } else if (key.name === "return" || key.name === "space") {
       const item = items[idx];
       if (!item) return;
       if (item.type === "file") {
         const fullPath = path.join(process.cwd(), item.name);
         const content = fs.readFileSync(fullPath, "utf-8");
         const parsed = parseHttpFile(content, fullPath);
+        console.log(parsed);
         setAppStore("sourceFileIndex", appStore.selectedRequestIndex);
         setAppStore("parsedRequests", parsed);
         setAppStore("parsedRequestIndex", 0);
@@ -113,13 +112,17 @@ export default () => {
         {(item, idx) => {
           const isSelected = () => idx() === appStore.selectedRequestIndex;
           const isActive = () => appStore.activePane === Pane.FILE_EXPLORER;
-          const isSourceFile = () => idx() === appStore.sourceFileIndex && !isActive();
+          const isSourceFile = () =>
+            idx() === appStore.sourceFileIndex && !isActive();
           return (
             <box
               width={"100%"}
               backgroundColor={
-                isSelected() && isActive() ? HIGHLIGHT_BG :
-                isSourceFile() ? SOURCE_FILE_BORDER : undefined
+                isSelected() && isActive()
+                  ? HIGHLIGHT_BG
+                  : isSourceFile()
+                    ? HIGHLIGHT_BG
+                    : undefined
               }
             >
               <text fg={isSelected() && isActive() ? HIGHLIGHT_FG : undefined}>
