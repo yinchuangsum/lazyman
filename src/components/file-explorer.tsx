@@ -14,7 +14,6 @@ export default () => {
     { key: "j/k", label: "Navigate" },
     { key: "Enter/Space", label: "Open" },
     { key: "e", label: "Edit" },
-    { key: "l/→", label: "Quick-parse" },
     { key: "d", label: "Diff" },
   ]);
 
@@ -24,21 +23,17 @@ export default () => {
     const idx = appStore.selectedRequestIndex;
 
     if (key.name === "j" || key.name === "down") {
-      setAppStore("selectedRequestIndex", Math.min(idx + 1, items.length - 1));
+      const newIdx = Math.min(idx + 1, items.length - 1);
+      setAppStore("selectedRequestIndex", newIdx);
+      loadFileFromItem(items[newIdx], newIdx);
     } else if (key.name === "k" || key.name === "up") {
-      setAppStore("selectedRequestIndex", Math.max(idx - 1, 0));
+      const newIdx = Math.max(idx - 1, 0);
+      setAppStore("selectedRequestIndex", newIdx);
+      loadFileFromItem(items[newIdx], newIdx);
     } else if (key.name === "return" || key.name === "space") {
       const item = items[idx];
       if (!item) return;
       if (item.type === "file") {
-        const fullPath = path.join(process.cwd(), item.name);
-        const content = fs.readFileSync(fullPath, "utf-8");
-        const parsed = parseHttpFile(content, fullPath);
-        console.log(parsed);
-        setAppStore("sourceFileIndex", appStore.selectedRequestIndex);
-        setAppStore("parsedRequests", parsed);
-        setAppStore("parsedRequestIndex", 0);
-        setAppStore("selectedRequestIndex", 0);
         setAppStore("consumeEnter", true);
         setAppStore("activePane", Pane.REQUEST_LIST);
       } else if (item.type === "history") {
@@ -47,15 +42,6 @@ export default () => {
         if (entry) {
           setAppStore("response", entry.response);
         }
-      }
-    } else if (key.name === "l" || key.name === "right") {
-      const item = items[idx];
-      if (item?.type === "file") {
-        const fullPath = path.join(process.cwd(), item.name);
-        const content = fs.readFileSync(fullPath, "utf-8");
-        const parsed = parseHttpFile(content, fullPath);
-        setAppStore("sourceFileIndex", appStore.selectedRequestIndex);
-        setAppStore("parsedRequests", parsed);
       }
     } else if (key.name === "e") {
       openInEditor(items[idx]);
@@ -162,4 +148,20 @@ function openInEditor(item: { name: string; type: string } | undefined) {
     return;
   }
   Bun.spawnSync([editor, filePath], { env: process.env });
+}
+
+function loadFileFromItem(
+  item: { name: string; type: string } | undefined,
+  index: number,
+) {
+  if (item?.type !== "file") return;
+  try {
+    const fullPath = path.join(process.cwd(), item.name);
+    const content = fs.readFileSync(fullPath, "utf-8");
+    setAppStore("sourceFileIndex", index);
+    setAppStore("parsedRequests", parseHttpFile(content, fullPath));
+    setAppStore("parsedRequestIndex", 0);
+  } catch {
+    setAppStore("error", `Failed to read ${item.name}`);
+  }
 }
