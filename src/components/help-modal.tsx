@@ -2,6 +2,7 @@ import { For } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
+import { useHotkeyBar } from "../hooks/useHotkeyBar";
 
 interface HelpSection {
   title: string;
@@ -70,6 +71,10 @@ const sections: HelpSection[] = [
 ];
 
 export default () => {
+  useHotkeyBar(Pane.HELP, () => [
+    { key: "Esc/?", label: "Close" },
+  ]);
+
   useKeyboard((key) => {
     if (!appStore.showHelpModal) return;
 
