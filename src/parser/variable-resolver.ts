@@ -1,3 +1,20 @@
+import type { ParsedRequest, ResolvedRequest } from "../types";
+import { loadEnv } from "../utils/env-loader";
+
+export function resolveRequest(req: ParsedRequest, selectedEnv: string): ResolvedRequest {
+  const activeEnv = loadEnv(selectedEnv);
+  const baseEnv = loadEnv("base");
+  return {
+    method: req.method,
+    url: resolveVariables(req.url, req.inlineVars, activeEnv, baseEnv),
+    httpVersion: req.httpVersion,
+    headers: Object.fromEntries(
+      Object.entries(req.headers).map(([k, v]) => [k, resolveVariables(v, req.inlineVars, activeEnv, baseEnv)]),
+    ),
+    body: resolveVariables(req.body, req.inlineVars, activeEnv, baseEnv),
+  };
+}
+
 export function resolveVariables(
   input: string,
   inlineVars: Record<string, unknown>,
