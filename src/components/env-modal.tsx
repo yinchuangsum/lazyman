@@ -20,10 +20,12 @@ export default () => {
       setAppStore("showEnvModal", false);
       setAppStore("activePane", Pane.FILE_EXPLORER);
     } else if (key.name === "j" || key.name === "down") {
-      setAppStore("selectedRequestIndex", (i) => Math.min(i + 1, envFiles().length - 1));
+      setAppStore("selectedRequestIndex", (i) =>
+        Math.min(i + 1, envFiles().length - 1),
+      );
     } else if (key.name === "k" || key.name === "up") {
       setAppStore("selectedRequestIndex", (i) => Math.max(i - 1, 0));
-    } else if (key.name === "enter") {
+    } else if (key.name === "return") {
       const files = envFiles();
       const selected = files[appStore.selectedRequestIndex];
       if (selected) {

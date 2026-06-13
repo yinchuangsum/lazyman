@@ -32,7 +32,9 @@ function buildTree(
     node.type = "null";
   } else if (Array.isArray(value)) {
     node.type = "array";
-    node.children = value.map((v, i) => buildTree(String(i), v, depth + 1, `${path}[${i}]`, expandedMap));
+    node.children = value.map((v, i) =>
+      buildTree(String(i), v, depth + 1, `${path}[${i}]`, expandedMap),
+    );
   } else if (typeof value === "object" && value !== null) {
     node.type = "object";
     node.children = Object.entries(value as Record<string, unknown>).map(
@@ -57,11 +59,13 @@ function flattenTree(nodes: TreeNode[]): { line: string; node: TreeNode }[] {
     line += node.depth > 0 ? `${node.key}: ` : "";
     if (node.type === "object") {
       line += node.expanded ? "▼ {" : "▶ {";
-      if (!node.expanded && node.children) line += ` ${node.children.length} keys`;
+      if (!node.expanded && node.children)
+        line += ` ${node.children.length} keys`;
       line += "}";
     } else if (node.type === "array") {
       line += node.expanded ? "▼ [" : "▶ [";
-      if (!node.expanded && node.children) line += ` ${node.children.length} items`;
+      if (!node.expanded && node.children)
+        line += ` ${node.children.length} items`;
       line += "]";
     } else if (node.type === "string") {
       line += `"${node.value as string}"`;
@@ -111,10 +115,12 @@ export default () => {
       const current = tabs.indexOf(activeTab());
       setActiveTab(tabs[(current + 1) % tabs.length]);
     } else if (key.name === "j" || key.name === "down") {
-      setAppStore("responseTreeCursor", (c) => Math.min(c + 1, visibleLines().length - 1));
+      setAppStore("responseTreeCursor", (c) =>
+        Math.min(c + 1, visibleLines().length - 1),
+      );
     } else if (key.name === "k" || key.name === "up") {
       setAppStore("responseTreeCursor", (c) => Math.max(c - 1, 0));
-    } else if (key.name === "enter" || key.name === "space") {
+    } else if (key.name === "return" || key.name === "space") {
       toggleCurrentNode();
     } else if (key.name === "y") {
       copyCurrentNode();
@@ -135,13 +141,25 @@ export default () => {
   const treeRoot = createMemo(() => {
     const body = parsedBody();
     if (!body) return null;
-    const root = buildTree("root", body, 0, "root", appStore.responseTreeExpanded);
+    const root = buildTree(
+      "root",
+      body,
+      0,
+      "root",
+      appStore.responseTreeExpanded,
+    );
     return root.children ?? [];
   });
 
   const visibleLines = createMemo(() => {
     const nodes = treeRoot();
-    if (!nodes) return [{ line: "(empty or non-JSON response)", node: null as unknown as TreeNode }];
+    if (!nodes)
+      return [
+        {
+          line: "(empty or non-JSON response)",
+          node: null as unknown as TreeNode,
+        },
+      ];
     const flat = flattenTree(nodes);
     const q = filterQuery().toLowerCase();
     if (!q) return flat;
@@ -164,7 +182,10 @@ export default () => {
     const cursor = appStore.responseTreeCursor;
     const item = lines[cursor];
     if (!item || !item.node) return;
-    const text = typeof item.node.value === "string" ? item.node.value : JSON.stringify(item.node.value, null, 2);
+    const text =
+      typeof item.node.value === "string"
+        ? item.node.value
+        : JSON.stringify(item.node.value, null, 2);
     Bun.spawnSync(["pbcopy"], { input: text });
   }
 
@@ -173,16 +194,21 @@ export default () => {
   return (
     <box flexDirection="column">
       {diffTarget() ? (
-        <DiffView historyResponse={diffTarget()!} currentResponse={response()!} />
+        <DiffView
+          historyResponse={diffTarget()!}
+          currentResponse={response()!}
+        />
       ) : response() ? (
         <>
           <text>
-            {response()!.status} {response()!.statusText} | {response()!.timeMs}ms | {response()!.sizeBytes}B
+            {response()!.status} {response()!.statusText} | {response()!.timeMs}
+            ms | {response()!.sizeBytes}B
           </text>
           <For each={appStore.assertionResults}>
             {(ar) => (
               <text>
-                {ar.passed ? "✓" : "✗"} @assert {ar.assertion.target} {ar.assertion.operator} {ar.assertion.expected}
+                {ar.passed ? "✓" : "✗"} @assert {ar.assertion.target}{" "}
+                {ar.assertion.operator} {ar.assertion.expected}
                 {ar.passed ? "" : ` (actual: ${ar.actual})`}
               </text>
             )}
@@ -204,11 +230,22 @@ export default () => {
               ) : null}
               <For each={visibleLines()}>
                 {(item, idx) => {
-                  const isSelected = () => idx() === appStore.responseTreeCursor;
-                  const isActive = () => appStore.activePane === Pane.RESPONSE_VIEWER;
+                  const isSelected = () =>
+                    idx() === appStore.responseTreeCursor;
+                  const isActive = () =>
+                    appStore.activePane === Pane.RESPONSE_VIEWER;
                   return (
-                    <box width="100%" backgroundColor={isSelected() && isActive() ? HIGHLIGHT_BG : undefined}>
-                      <text fg={isSelected() && isActive() ? HIGHLIGHT_FG : undefined}>
+                    <box
+                      width="100%"
+                      backgroundColor={
+                        isSelected() && isActive() ? HIGHLIGHT_BG : undefined
+                      }
+                    >
+                      <text
+                        fg={
+                          isSelected() && isActive() ? HIGHLIGHT_FG : undefined
+                        }
+                      >
                         {"  "}
                         {item.line}
                       </text>
@@ -248,16 +285,27 @@ export default () => {
   );
 };
 
-function DiffView(props: { historyResponse: import("../types").ResponseData; currentResponse: import("../types").ResponseData }) {
-  const diff = () => diffResponses(props.historyResponse, props.currentResponse);
+function DiffView(props: {
+  historyResponse: import("../types").ResponseData;
+  currentResponse: import("../types").ResponseData;
+}) {
+  const diff = () =>
+    diffResponses(props.historyResponse, props.currentResponse);
 
   return (
     <box flexDirection="column">
       <text>── Diff (History vs Live) ──</text>
-      <text>Status: {diff().statusChanged ? "✗" : "✓"} {diff().statusBefore} → {diff().statusAfter}</text>
+      <text>
+        Status: {diff().statusChanged ? "✗" : "✓"} {diff().statusBefore} →{" "}
+        {diff().statusAfter}
+      </text>
       <text>Body: {diff().bodyChanged ? "✗ changed" : "✓ identical"}</text>
       <For each={diff().headerDiffs}>
-        {(hd) => <text>{hd.key}: {hd.before} → {hd.after}</text>}
+        {(hd) => (
+          <text>
+            {hd.key}: {hd.before} → {hd.after}
+          </text>
+        )}
       </For>
       <text>Press Tab to return to response view</text>
     </box>

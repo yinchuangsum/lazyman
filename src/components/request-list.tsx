@@ -22,13 +22,13 @@ export default () => {
       );
     } else if (key.name === "k" || key.name === "up") {
       setAppStore("parsedRequestIndex", (i) => Math.max(i - 1, 0));
-    } else if (key.name === "enter" || key.name === "space") {
+    } else if ((!key.ctrl && key.name === "return") || key.name === "space") {
       if (appStore.consumeEnter) {
         setAppStore("consumeEnter", false);
         return;
       }
       setAppStore("activePane", Pane.REQUEST_DETAIL);
-    } else if (key.ctrl && key.name === "enter") {
+    } else if (key.ctrl && key.name === "return") {
       executeSelected();
     }
   });
