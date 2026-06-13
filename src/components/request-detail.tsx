@@ -2,8 +2,7 @@ import { createMemo, createSignal, For } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
-import { loadEnv } from "../utils/env-loader";
-import { resolveVariables } from "../parser/variable-resolver";
+import { resolveRequest } from "../parser/variable-resolver";
 import { useHotkeyBar } from "../hooks/useHotkeyBar";
 
 export default () => {
@@ -34,19 +33,7 @@ export default () => {
   const resolvedRequest = createMemo(() => {
     const req = currentRequest();
     if (!req) return null;
-
-    const activeEnv = loadEnv(appStore.selectedEnv);
-    const baseEnv = loadEnv("base");
-
-    return {
-      method: req.method,
-      url: resolveVariables(req.url, req.inlineVars, activeEnv, baseEnv),
-      httpVersion: req.httpVersion,
-      headers: Object.fromEntries(
-        Object.entries(req.headers).map(([k, v]) => [k, resolveVariables(v, req.inlineVars, activeEnv, baseEnv)]),
-      ),
-      body: resolveVariables(req.body, req.inlineVars, activeEnv, baseEnv),
-    };
+    return resolveRequest(req, appStore.selectedEnv);
   });
 
   const detailLines = createMemo(() => {
