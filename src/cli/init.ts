@@ -28,10 +28,12 @@ export function init() {
     JSON.stringify({ base_url: "https://dev.api.example.com" }, null, 2),
   );
 
-  const scriptsDir = path.join(cwd, "scripts");
-  fs.mkdirSync(scriptsDir, { recursive: true });
-  fs.writeFileSync(path.join(scriptsDir, "pre-request.js"), "// request.headers['X-Trace-Id'] = env.trace_id;\n");
-  fs.writeFileSync(path.join(scriptsDir, "post-response.js"), "// if (response.body) { /* inspect response */ }\n");
+  const globalPreDir = path.join(cwd, "scripts", "global", "pre-request");
+  const globalPostDir = path.join(cwd, "scripts", "global", "post-response");
+  fs.mkdirSync(globalPreDir, { recursive: true });
+  fs.mkdirSync(globalPostDir, { recursive: true });
+  fs.writeFileSync(path.join(globalPreDir, "01-trace.js"), "// request.headers['X-Trace-Id'] = env.trace_id;\n");
+  fs.writeFileSync(path.join(globalPostDir, "01-log.js"), "// if (response.body) { /* inspect response */ }\n");
 
   const exampleHttp = [
     "### Get users",
