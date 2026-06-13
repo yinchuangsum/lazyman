@@ -16,6 +16,7 @@ import EnvModal from "./components/env-modal";
 import HelpModal from "./components/help-modal";
 import { appStore, setAppStore } from "./stores/appStore";
 import { Pane as PaneEnum } from "./utils/panes";
+import { HIGHLIGHT_BG } from "./style";
 
 render(
   () => {
@@ -77,7 +78,12 @@ render(
                 <HelpModal />
               </Pane>
             ) : (
-              <Pane width="100%" height="100%" title="Environment Selector" focused={true}>
+              <Pane
+                width="100%"
+                height="100%"
+                title="Environment Selector"
+                focused={true}
+              >
                 <EnvModal />
               </Pane>
             )
@@ -122,10 +128,13 @@ render(
             </>
           )}
         </box>
-        <box width="100%" height={1} flexDirection="row">
-          <For each={appStore.hotkeyBarItems}>
-            {(item) => <text>  {item.key} {item.label}</text>}
-          </For>
+        <box width="100%" height={2} flexDirection="row">
+          <text fg={HIGHLIGHT_BG}>
+            {" "}
+            {appStore.hotkeyBarItems
+              .map((item) => `${item.label}: ${item.key}`)
+              .join("  |  ")}
+          </text>
         </box>
       </box>
     );
