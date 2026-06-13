@@ -1,4 +1,4 @@
-import { For, createMemo } from "solid-js";
+import { For, createEffect, createMemo } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
@@ -91,6 +91,12 @@ export default () => {
 
     return result;
   });
+
+  createEffect(() => {
+    const items = flatItems();
+    const idx = appStore.selectedRequestIndex;
+    loadFileFromItem(items[idx], idx);
+  }, []);
 
   return (
     <box flexDirection="column">
