@@ -22,13 +22,13 @@ export default () => {
       );
     } else if (key.name === "k" || key.name === "up") {
       setAppStore("parsedRequestIndex", (i) => Math.max(i - 1, 0));
-    } else if ((!key.ctrl && key.name === "return") || key.name === "space") {
+    } else if (key.name === "space") {
       if (appStore.consumeEnter) {
         setAppStore("consumeEnter", false);
         return;
       }
       setAppStore("activePane", Pane.REQUEST_DETAIL);
-    } else if (key.ctrl && key.name === "return") {
+    } else if (key.name === "return") {
       executeSelected();
     }
   });
@@ -68,6 +68,8 @@ async function executeSelected() {
     appStore.selectedEnv,
     process.cwd(),
   );
+
+  console.log(result);
 
   if (result.error) {
     setAppStore("error", result.error);
