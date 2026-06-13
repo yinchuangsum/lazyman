@@ -73,6 +73,57 @@ describe("http-parser", () => {
     expect(requests[0].inlineVars).toEqual({ id: "123" });
   });
 
+  it("parses inline # @script pre-request and post-response directives", () => {
+    const content = [
+      "### Login",
+      "POST {{base}}/auth/login",
+      "Content-Type: application/json",
+      "# @script pre-request",
+      "# env.token = 'abc';",
+      "# env.userId = '42';",
+      "",
+      '{"user":"test"}',
+    ].join("\n");
+
+    const requests = parseHttpFile(content, "api.http");
+    expect(requests).toHaveLength(1);
+    expect(requests[0].scripts).toHaveLength(1);
+    expect(requests[0].scripts[0].hook).toBe("pre-request");
+    expect(requests[0].scripts[0].content).toBe("env.token = 'abc';\nenv.userId = '42';");
+  });
+
+  it("parses multiple script hooks in the same block", () => {
+    const content = [
+      "### Login",
+      "POST {{base}}/auth/login",
+      "# @script pre-request",
+      "# env.token = 'abc';",
+      "# @script post-response",
+      "# console.log(response.status);",
+    ].join("\n");
+
+    const requests = parseHttpFile(content, "api.http");
+    expect(requests).toHaveLength(1);
+    expect(requests[0].scripts).toHaveLength(2);
+    expect(requests[0].scripts[0].hook).toBe("pre-request");
+    expect(requests[0].scripts[0].content).toBe("env.token = 'abc';");
+    expect(requests[0].scripts[1].hook).toBe("post-response");
+    expect(requests[0].scripts[1].content).toBe("console.log(response.status);");
+  });
+
+  it("ignores @script directives that are not pre-request or post-response", () => {
+    const content = [
+      "### Test",
+      "GET /api/test",
+      "# @script unknown",
+      "# some comment",
+    ].join("\n");
+
+    const requests = parseHttpFile(content, "api.http");
+    expect(requests).toHaveLength(1);
+    expect(requests[0].scripts).toHaveLength(0);
+  });
+
   it("injects body from file via < filepath syntax", () => {
     const testBodyPath = import.meta.dirname + "/test-body.txt";
     fs.writeFileSync(testBodyPath, "file content here", "utf-8");
