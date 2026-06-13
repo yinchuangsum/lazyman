@@ -1,4 +1,4 @@
-import type { ParsedRequest } from "../types";
+import type { ParsedRequest, ScriptRef } from "../types";
 import { parseAssertion } from "../engine/assertions";
 import path from "path";
 import fs from "fs";
@@ -39,6 +39,39 @@ function parseBlockLines(lines: string[], name: string | undefined, startLine: n
   let lineIdx = 0;
   const assertions: ParsedRequest["assertions"] = [];
   const inlineVars: Record<string, string> = {};
+  const scripts: ScriptRef[] = [];
+  let currentScript: { hook: "pre-request" | "post-response"; lines: string[]; sourceLine: number } | null = null;
+
+  function flushScript() {
+    if (currentScript) {
+      scripts.push({
+        hook: currentScript.hook,
+        content: currentScript.lines.join("\n"),
+        sourceLine: currentScript.sourceLine,
+      });
+      currentScript = null;
+    }
+  }
+
+  function handleCommentLine(line: string, lineNumber: number) {
+    const directive = parseScriptDirective(line);
+    if (directive) {
+      flushScript();
+      currentScript = { hook: directive, lines: [], sourceLine: lineNumber + 1 };
+      return;
+    }
+
+    if (currentScript) {
+      const bodyLine = line.replace(/^(?:#|\/\/)\s?/, "");
+      currentScript.lines.push(bodyLine);
+      return;
+    }
+
+    const assert = parseAssertion(line);
+    if (assert) assertions.push(assert);
+    const inlineVar = parseInlineVar(line);
+    if (inlineVar) Object.assign(inlineVars, inlineVar);
+  }
 
   while (lineIdx < lines.length) {
     const line = lines[lineIdx];
@@ -48,15 +81,13 @@ function parseBlockLines(lines: string[], name: string | undefined, startLine: n
       continue;
     }
     if (line.startsWith("#") || line.startsWith("//")) {
-      const assert = parseAssertion(line);
-      if (assert) assertions.push(assert);
-      const inlineVar = parseInlineVar(line);
-      if (inlineVar) Object.assign(inlineVars, inlineVar);
+      handleCommentLine(line, lineIdx);
       lineIdx++;
       continue;
     }
     break;
   }
+  flushScript();
   if (lineIdx >= lines.length) return null;
 
   const requestLine = parseRequestLine(lines[lineIdx]);
@@ -72,12 +103,11 @@ function parseBlockLines(lines: string[], name: string | undefined, startLine: n
     const line = lines[lineIdx];
 
     if (line.startsWith("#") || line.startsWith("//")) {
-      const assert = parseAssertion(line);
-      if (assert) assertions.push(assert);
-      const inlineVar = parseInlineVar(line);
-      if (inlineVar) Object.assign(inlineVars, inlineVar);
+      handleCommentLine(line, lineIdx);
       continue;
     }
+
+    flushScript();
 
     if (inHeaders) {
       if (line.trim() === "") {
@@ -94,6 +124,8 @@ function parseBlockLines(lines: string[], name: string | undefined, startLine: n
       bodyLines.push(line);
     }
   }
+
+  flushScript();
 
   let body = bodyLines.join("\n").trim();
   const fileInjectMatch = body.match(/^<\s+(.+)$/);
@@ -115,9 +147,15 @@ function parseBlockLines(lines: string[], name: string | undefined, startLine: n
     name,
     assertions,
     inlineVars,
-    scripts: [],
+    scripts,
     sourceLine: startLine,
   };
+}
+
+function parseScriptDirective(line: string): "pre-request" | "post-response" | null {
+  const trimmed = line.replace(/^(?:#|\/\/)\s*/, "");
+  const match = trimmed.match(/^@script\s+(pre-request|post-response)\s*$/);
+  return match ? (match[1] as "pre-request" | "post-response") : null;
 }
 
 function parseInlineVar(line: string): Record<string, string> | null {
