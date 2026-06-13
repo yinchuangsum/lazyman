@@ -73,20 +73,17 @@ render(
       <box flexDirection="column" width="100%" height="100%">
         <box flexGrow={1} width="100%" flexDirection="row">
           {isModal() ? (
-            appStore.showHelpModal ? (
-              <Pane width="100%" height="100%" title="Help" focused={true}>
-                <HelpModal />
-              </Pane>
-            ) : (
-              <Pane
-                width="100%"
-                height="100%"
-                title="Environment Selector"
-                focused={true}
-              >
-                <EnvModal />
-              </Pane>
-            )
+            <box width="100%" height="100%" alignItems="center" justifyContent="center">
+              {appStore.showHelpModal ? (
+                <Pane width="70%" height="85%" title="Help" focused={true}>
+                  <HelpModal />
+                </Pane>
+              ) : (
+                <Pane width="50%" height="60%" title="Environment Selector" focused={true}>
+                  <EnvModal />
+                </Pane>
+              )}
+            </box>
           ) : (
             <>
               <Pane
