@@ -26,34 +26,40 @@ render(
         PaneEnum.REQUEST_DETAIL,
         PaneEnum.RESPONSE_VIEWER,
       ];
+      const isModal = appStore.showEnvModal || appStore.showHelpModal;
 
       if (key.name === "tab") {
+        if (isModal) return;
         const current = paneOrder.indexOf(appStore.activePane);
         if (current === -1) return;
         setAppStore("activePane", paneOrder[(current + 1) % paneOrder.length]!);
       } else if (key.name === "1") {
+        if (isModal) return;
         setAppStore("activePane", PaneEnum.FILE_EXPLORER);
       } else if (key.name === "2") {
+        if (isModal) return;
         setAppStore("activePane", PaneEnum.REQUEST_LIST);
       } else if (key.name === "3") {
+        if (isModal) return;
         setAppStore("activePane", PaneEnum.REQUEST_DETAIL);
       } else if (key.name === "4") {
+        if (isModal) return;
         setAppStore("activePane", PaneEnum.RESPONSE_VIEWER);
       } else if (key.name === "v") {
-        if (!appStore.showHelpModal) {
-          setAppStore("showEnvModal", !appStore.showEnvModal);
-          if (appStore.showEnvModal) {
-            setAppStore("activePane", PaneEnum.ENV_MODAL);
-          }
+        if (appStore.showHelpModal) return;
+        setAppStore("showEnvModal", !appStore.showEnvModal);
+        if (appStore.showEnvModal) {
+          setAppStore("activePane", PaneEnum.ENV_MODAL);
+        } else {
+          setAppStore("activePane", PaneEnum.FILE_EXPLORER);
         }
       } else if (key.name === "?") {
-        if (!appStore.showEnvModal) {
-          setAppStore("showHelpModal", !appStore.showHelpModal);
-          if (appStore.showHelpModal) {
-            setAppStore("activePane", PaneEnum.HELP);
-          } else {
-            setAppStore("activePane", PaneEnum.FILE_EXPLORER);
-          }
+        if (appStore.showEnvModal) return;
+        setAppStore("showHelpModal", !appStore.showHelpModal);
+        if (appStore.showHelpModal) {
+          setAppStore("activePane", PaneEnum.HELP);
+        } else {
+          setAppStore("activePane", PaneEnum.FILE_EXPLORER);
         }
       } else if (key.name === "q") {
         process.exit(0);
