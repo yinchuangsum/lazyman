@@ -25,9 +25,9 @@ const sections: HelpSection[] = [
     bindings: [
       { key: "j / ↓", action: "Move selection down" },
       { key: "k / ↑", action: "Move selection up" },
-      { key: "Enter", action: "Open file / history entry" },
-      { key: "l / →", action: "Quick-parse file" },
-      { key: "e", action: "Open in $EDITOR" },
+      { key: "[ / ]", action: "Switch tab (Files/History)" },
+      { key: "Enter", action: "Open file / view history entry" },
+      { key: "e", action: "Open file in $EDITOR" },
       { key: "d", action: "Diff history entry" },
     ],
   },

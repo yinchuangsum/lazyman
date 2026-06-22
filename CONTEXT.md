@@ -45,6 +45,9 @@ The `.http` file whose parsed requests are currently loaded in the Request List 
 A single-row status bar at the bottom of the TUI, rendered outside all panes. Displays context-sensitive keybinding hints for the currently active pane. Components publish their bindings via the `useHotkeyBar(pane, () => HotkeyItem[])` hook.
 *Avoid*: Status bar
 
+**Tab**:
+A sub-section within a Pane, switched with `[` and `]`. The Explorer pane has two tabs: Files and History. The active tab is indicated by a `▶` prefix in the pane border title. Each tab tracks its own cursor independently.
+
 **Help Modal**:
 A full-screen overlay (like the Env Modal) toggled by `?` from anywhere. Lists every pane's keybindings grouped by section. Closing returns focus to FILE_EXPLORER.
 

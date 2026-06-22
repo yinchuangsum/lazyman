@@ -6,50 +6,77 @@ import { parseHttpFile } from "../parser/http-parser";
 import { loadHistoryEntries } from "../engine/history";
 import { HIGHLIGHT_BG, HIGHLIGHT_FG } from "../style";
 import { useHotkeyBar } from "../hooks/useHotkeyBar";
+import type { HistoryEntry } from "../types";
 import fs from "fs";
 import path from "path";
 
 export default () => {
-  useHotkeyBar(Pane.FILE_EXPLORER, () => [
-    { key: "j/k", label: "Navigate" },
-    { key: "Enter/Space", label: "Open" },
-    { key: "e", label: "Edit" },
-    { key: "d", label: "Diff" },
-  ]);
+  useHotkeyBar(Pane.FILE_EXPLORER, () => {
+    if (appStore.explorerTabIndex === 0) {
+      return [
+        { key: "j/k", label: "Navigate" },
+        { key: "Enter/Space", label: "Open" },
+        { key: "e", label: "Edit" },
+        { key: "[/]", label: "Switch tab" },
+      ];
+    }
+    return [
+      { key: "j/k", label: "Navigate" },
+      { key: "Enter/Space", label: "View" },
+      { key: "d", label: "Diff" },
+      { key: "[/]", label: "Switch tab" },
+    ];
+  });
 
   useKeyboard((key) => {
     if (appStore.activePane !== Pane.FILE_EXPLORER) return;
-    const items = flatItems();
-    const idx = appStore.selectedRequestIndex;
 
-    if (key.name === "j" || key.name === "down") {
-      const newIdx = Math.min(idx + 1, items.length - 1);
-      setAppStore("selectedRequestIndex", newIdx);
-      loadFileFromItem(items[newIdx], newIdx);
-    } else if (key.name === "k" || key.name === "up") {
-      const newIdx = Math.max(idx - 1, 0);
-      setAppStore("selectedRequestIndex", newIdx);
-      loadFileFromItem(items[newIdx], newIdx);
-    } else if (key.name === "return" || key.name === "space") {
-      const item = items[idx];
-      if (!item) return;
-      if (item.type === "file") {
+    if (key.name === "[") {
+      setAppStore("explorerTabIndex", 0);
+      return;
+    }
+    if (key.name === "]") {
+      setAppStore("explorerTabIndex", 1);
+      return;
+    }
+
+    if (appStore.explorerTabIndex === 0) {
+      const items = fileItems();
+      const idx = appStore.filesCursor;
+      if (key.name === "j" || key.name === "down") {
+        const newIdx = Math.min(idx + 1, items.length - 1);
+        setAppStore("filesCursor", newIdx);
+        loadFileFromItem(items[newIdx], newIdx);
+      } else if (key.name === "k" || key.name === "up") {
+        const newIdx = Math.max(idx - 1, 0);
+        setAppStore("filesCursor", newIdx);
+        loadFileFromItem(items[newIdx], newIdx);
+      } else if (key.name === "return" || key.name === "space") {
+        const item = items[idx];
+        if (!item) return;
         setAppStore("consumeEnter", true);
         setAppStore("activePane", Pane.REQUEST_LIST);
-      } else if (item.type === "history") {
-        setAppStore("activePane", Pane.RESPONSE_VIEWER);
-        const entry = item._entry;
-        if (entry) {
-          setAppStore("response", entry.response);
-        }
+      } else if (key.name === "e") {
+        openInEditor(items[idx]);
       }
-    } else if (key.name === "e") {
-      openInEditor(items[idx]);
-    } else if (key.name === "d") {
-      const item = items[idx];
-      if (item?.type === "history" && item._entry && appStore.response) {
-        setAppStore("diffTarget", item._entry.response);
+    } else {
+      const items = historyItems();
+      const idx = appStore.historyCursor;
+      if (key.name === "j" || key.name === "down") {
+        setAppStore("historyCursor", (c) => Math.min(c + 1, items.length - 1));
+      } else if (key.name === "k" || key.name === "up") {
+        setAppStore("historyCursor", (c) => Math.max(c - 1, 0));
+      } else if (key.name === "return" || key.name === "space") {
+        const item = items[idx];
+        if (!item) return;
         setAppStore("activePane", Pane.RESPONSE_VIEWER);
+        setAppStore("response", item.response);
+      } else if (key.name === "d") {
+        const item = items[idx];
+        if (item && appStore.response) {
+          setAppStore("diffTarget", item.response);
+          setAppStore("activePane", Pane.RESPONSE_VIEWER);
+        }
       }
     }
   });
@@ -62,50 +89,50 @@ export default () => {
     }
   });
 
-  const flatItems = createMemo(() => {
-    type Item = {
-      name: string;
-      type: "file" | "history";
-      _entry?: import("../types").HistoryEntry;
-    };
-    const result: Item[] = [];
+  const fileItems = createMemo(() => {
+    const result: string[] = [];
     const cwd = process.cwd();
-
     try {
       const dir = fs.readdirSync(cwd);
       for (const f of dir) {
         if (f.endsWith(".http") || f.endsWith(".rest")) {
-          result.push({ name: f, type: "file" });
+          result.push(f);
         }
       }
     } catch {}
-
-    const history = historyEntries();
-    if (history.length > 0) {
-      result.push({ name: "── history ──", type: "history" });
-      for (const entry of history) {
-        const label = `  ${entry.method} ${entry.url}`;
-        result.push({ name: label, type: "history", _entry: entry });
-      }
-    }
-
     return result;
   });
 
+  const historyItems = createMemo(() => {
+    return historyEntries();
+  });
+
   createEffect(() => {
-    const items = flatItems();
-    const idx = appStore.selectedRequestIndex;
+    const items = fileItems();
+    const idx = appStore.filesCursor;
     loadFileFromItem(items[idx], idx);
-  }, []);
+  });
+
+  const currentItems = createMemo(() => {
+    if (appStore.explorerTabIndex === 0) {
+      return fileItems() as (string | HistoryEntry)[];
+    }
+    return historyItems() as (string | HistoryEntry)[];
+  });
 
   return (
     <box flexDirection="column">
-      <For each={flatItems()}>
+      <For each={currentItems()}>
         {(item, idx) => {
-          const isSelected = () => idx() === appStore.selectedRequestIndex;
+          const isSelected = () =>
+            appStore.explorerTabIndex === 0
+              ? idx() === appStore.filesCursor
+              : idx() === appStore.historyCursor;
           const isActive = () => appStore.activePane === Pane.FILE_EXPLORER;
           const isSourceFile = () =>
-            idx() === appStore.sourceFileIndex && !isActive();
+            appStore.explorerTabIndex === 0 &&
+            idx() === appStore.sourceFileIndex &&
+            !isActive();
           return (
             <box
               width={"100%"}
@@ -119,8 +146,10 @@ export default () => {
             >
               <text fg={isSelected() && isActive() ? HIGHLIGHT_FG : undefined}>
                 {"  "}
-                {item.type === "history" ? "⏱ " : ""}
-                {item.name}
+                {appStore.explorerTabIndex === 1 ? "⏱ " : ""}
+                {appStore.explorerTabIndex === 1
+                  ? `${(item as HistoryEntry).method} ${(item as HistoryEntry).url}`
+                  : (item as string)}
               </text>
             </box>
           );
@@ -130,44 +159,28 @@ export default () => {
   );
 };
 
-function openInEditor(item: { name: string; type: string } | undefined) {
+function openInEditor(item: string | undefined) {
   if (!item) return;
   const editor = process.env.EDITOR;
   if (!editor) {
     setAppStore("error", "No $EDITOR set");
     return;
   }
-
   const cwd = process.cwd();
-  const filePath = path.join(
-    cwd,
-    item.name.endsWith(".http") || item.name.endsWith(".rest")
-      ? item.name
-      : "example.http",
-  );
-  if (!fs.existsSync(filePath)) {
-    const found = fs
-      .readdirSync(cwd)
-      .find((f) => f.endsWith(".http") || f.endsWith(".rest"));
-    if (!found) return;
-    Bun.spawnSync([editor, path.join(cwd, found)], { env: process.env });
-    return;
-  }
+  const filePath = path.join(cwd, item);
+  if (!fs.existsSync(filePath)) return;
   Bun.spawnSync([editor, filePath], { env: process.env });
 }
 
-function loadFileFromItem(
-  item: { name: string; type: string } | undefined,
-  index: number,
-) {
-  if (item?.type !== "file") return;
+function loadFileFromItem(item: string | undefined, index: number) {
+  if (!item) return;
   try {
-    const fullPath = path.join(process.cwd(), item.name);
+    const fullPath = path.join(process.cwd(), item);
     const content = fs.readFileSync(fullPath, "utf-8");
     setAppStore("sourceFileIndex", index);
     setAppStore("parsedRequests", parseHttpFile(content, fullPath));
     setAppStore("parsedRequestIndex", 0);
   } catch {
-    setAppStore("error", `Failed to read ${item.name}`);
+    setAppStore("error", `Failed to read ${item}`);
   }
 }

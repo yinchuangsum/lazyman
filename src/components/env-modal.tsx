@@ -1,4 +1,4 @@
-import { createMemo, For } from "solid-js";
+import { createMemo, createSignal, For } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
@@ -13,6 +13,8 @@ export default () => {
     { key: "Esc/v", label: "Close" },
   ]);
 
+  const [envCursor, setEnvCursor] = createSignal(0);
+
   useKeyboard((key) => {
     if (!appStore.showEnvModal) return;
 
@@ -20,14 +22,12 @@ export default () => {
       setAppStore("showEnvModal", false);
       setAppStore("activePane", Pane.FILE_EXPLORER);
     } else if (key.name === "j" || key.name === "down") {
-      setAppStore("selectedRequestIndex", (i) =>
-        Math.min(i + 1, envFiles().length - 1),
-      );
+      setEnvCursor((i) => Math.min(i + 1, envFiles().length - 1));
     } else if (key.name === "k" || key.name === "up") {
-      setAppStore("selectedRequestIndex", (i) => Math.max(i - 1, 0));
+      setEnvCursor((i) => Math.max(i - 1, 0));
     } else if (key.name === "return") {
       const files = envFiles();
-      const selected = files[appStore.selectedRequestIndex];
+      const selected = files[envCursor()];
       if (selected) {
         const name = selected.replace(/\.json$/, "");
         setAppStore("selectedEnv", name);
@@ -54,13 +54,13 @@ export default () => {
       <For each={envFiles()}>
         {(file, idx) => {
           const name = file.replace(/\.json$/, "");
-          const isSelected = idx() === appStore.selectedRequestIndex;
-          const isActive = name === appStore.selectedEnv;
+          const isSelected = () => idx() === envCursor();
+          const isActive = () => name === appStore.selectedEnv;
           return (
             <text>
-              {isSelected ? "→ " : "  "}
+              {isSelected() ? "→ " : "  "}
               {name}
-              {isActive ? " (active)" : ""}
+              {isActive() ? " (active)" : ""}
             </text>
           );
         }}

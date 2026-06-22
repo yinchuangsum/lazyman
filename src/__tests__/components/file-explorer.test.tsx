@@ -25,7 +25,8 @@ afterAll(() => {
 
 describe("FileExplorer", () => {
   it("renders .http files from the working directory", async () => {
-    setAppStore("selectedRequestIndex", 0);
+    setAppStore("filesCursor", 0);
+    setAppStore("explorerTabIndex", 0);
     setAppStore("activePane", Pane.FILE_EXPLORER);
 
     const { flush, renderOnce, captureCharFrame } = await testRender(() => (

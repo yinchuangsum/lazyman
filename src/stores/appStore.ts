@@ -12,6 +12,9 @@ export type AppState = {
   selectedRequestIndex: number;
   parsedRequestIndex: number;
   sourceFileIndex: number;
+  explorerTabIndex: number;
+  filesCursor: number;
+  historyCursor: number;
   response: ResponseData | null;
   assertionResults: AssertionResult[];
   historyEntries: HistoryEntry[];
@@ -33,6 +36,9 @@ export const [appStore, setAppStore] = createStore<AppState>({
   selectedRequestIndex: 0,
   parsedRequestIndex: 0,
   sourceFileIndex: -1,
+  explorerTabIndex: 0,
+  filesCursor: 0,
+  historyCursor: 0,
   response: null,
   assertionResults: [],
   historyEntries: [],

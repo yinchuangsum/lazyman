@@ -90,6 +90,25 @@ src/
 - **Source file highlight:** The File Explorer dimly highlights the `.http` file whose requests are currently loaded in the Request List pane, even when Explorer is not focused.
 - **No centralized test-lint-typecheck scripts** — just `bun test`.
 
+## Code review checklist
+
+Before committing any component change, run this check for `For` reactivity bugs:
+
+```sh
+# Find consts inside <For> that access appStore or idx() without being arrow functions
+rg '<For each=' -A5 src/components/*.tsx | rg 'const.*=.*(?:appStore|idx)\b'
+```
+
+Every `const` inside a `<For>` callback that reads `appStore.*` or `idx()` must be an arrow function, not a plain value. See `CONTEXT.md:53` for the WRONG/CORRECT pattern with examples.
+
+```tsx
+// WRONG — snapshots once
+const isSelected = idx() === appStore.selectedRequestIndex;
+
+// CORRECT — re-reads on each render
+const isSelected = () => idx() === appStore.selectedRequestIndex;
+```
+
 ## Issue tracker
 
 Local markdown issues live in `docs/issues/`. Create a new file per issue following the refactor-plan template in the skill.

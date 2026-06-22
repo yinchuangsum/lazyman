@@ -89,7 +89,11 @@ render(
               <Pane
                 width="25%"
                 height="100%"
-                title={"[1] Explorer"}
+                title={
+                  appStore.explorerTabIndex === 0
+                    ? "[1]— ▶ Files - History"
+                    : "[1]— Files - ▶ History"
+                }
                 focused={appStore.activePane === PaneEnum.FILE_EXPLORER}
               >
                 <FileExplorer />
