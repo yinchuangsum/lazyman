@@ -8,7 +8,8 @@
     "dev-console": "SHOW_CONSOLE=true bun run --watch src/index.tsx",
     "dev-init": "bun run src/index.tsx init",
     "test": "bun test --preload=@opentui/solid/preload",
-    "test:watch": "bun test --preload=@opentui/solid/preload --watch"
+    "test:watch": "bun test --preload=@opentui/solid/preload --watch",
+    "test:e2e": "bash e2e/test-lazyman.sh"
   },
   "devDependencies": {
     "@types/bun": "latest"

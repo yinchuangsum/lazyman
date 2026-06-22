@@ -1,0 +1,5 @@
+{
+  "defaultEnv": "base",
+  "timeout": 10000,
+  "followRedirects": true
+}

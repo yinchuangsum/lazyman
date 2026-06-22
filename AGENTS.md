@@ -105,6 +105,37 @@ Execution pipeline phases (in order):
 
 Session env flows through the entire pipeline as a single `Record<string, string>`. If a script errors the chain stops for that hook phase; the error is captured but execution continues to the next phase.
 
+## E2E tests (agent-tui)
+
+Full-app end-to-end tests live in `e2e/`. They use [agent-tui](https://github.com/pproenca/agent-tui) to drive the TUI in a PTY — screenshot, press keys, wait for text.
+
+```sh
+bun run test:e2e           # run e2e tests (14 assertions across 7 scenarios)
+```
+
+Architecture:
+- `e2e/fixtures/` — `.http` files and `.lazyman/` environment config for a clean test workspace
+- `e2e/http-test-server.js` — simple Bun.serve() for request execution assertions
+- `e2e/test-lazyman.sh` — orchestration: daemon start → spawn lazyman → assert → cleanup
+- `e2e/lazyman-acceptance.md` — schema-v1 acceptance spec (usable by tui-explorer)
+
+Workflow per scenario: `wait --stable` → `screenshot` → `press` → `wait "text" --assert`.
+
+Key commands:
+```sh
+agent-tui daemon start                           # start daemon
+agent-tui run --format json --cwd <dir> -- <cmd> # launch app, captures session_id
+agent-tui --session <id> wait "text" --assert    # assert text visible
+agent-tui --session <id> wait --stable           # wait for render to settle
+agent-tui --session <id> press <key>             # send keystroke
+agent-tui --session <id> kill                    # terminate session
+agent-tui daemon stop                            # stop daemon
+```
+
+## Agent skills
+
+The `agent-tui` and `tui-explorer` skills are installed at `~/.agents/skills/`. Use `skill("agent-tui")` for TUI automation instructions and `skill("tui-explorer")` for discovery/replay workflows.
+
 ## Agent workflow
 
 - **Evolve docs alongside code:** Every session should include a pass to update `CONTEXT.md` or `AGENTS.md` with any new patterns, domain terms, or decisions discovered during the session. These files are the permanent memory — without them, each agent starts from scratch.
