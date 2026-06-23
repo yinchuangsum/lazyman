@@ -9,8 +9,9 @@ bun install              # install dependencies
 bun dev                  # run TUI with live reload
 bun dev-console          # run TUI with console overlay visible (SHOW_CONSOLE=true)
 bun dev-init             # run `lazyman init` subcommand (bootstrap .lazyman/)
-bun test                 # run all tests (60 tests)
+bun test                 # run all tests (72 tests across 18 files)
 bun test:watch           # run tests in watch mode
+bun test:e2e             # run end-to-end tests (18 scenarios via agent-tui)
 ```
 
 ## Tech
@@ -26,36 +27,38 @@ bun test:watch           # run tests in watch mode
 
 ```
 src/
-  index.tsx                   — entrypoint: `init` subcommand → CLI, else → TUI (4-pane layout + global keybindings + hotkey bar)
-  types.ts                    — shared data models
+  index.tsx                   — entrypoint: `init` subcommand → CLI, else → TUI (4-pane layout + global keybindings + hotkey bar + search input)
+  types.ts                    — shared data models (ParsedRequest, ResponseData, HistoryEntry, Assertion, ScriptRef, etc.)
   cli/init.ts                 — `lazyman init` bootstrap (.lazyman/ tree, example.http, .gitignore)
   parser/
-    http-parser.ts            — RFC-2616 .http file parser (line-by-line, tracks sourceLine)
-    variable-resolver.ts      — {{var}} cascading resolution (inline → env → base → OS)
+    http-parser.ts            — RFC-2616 .http file parser (line-by-line, tracks sourceLine, handles file injection)
+    variable-resolver.ts      — {{var}} cascading resolution (inline → env → base → OS, dot-path support)
   engine/
     executor.ts               — HTTP via Bun.fetch() + timing + error wrapper
     assertions.ts             — # @assert evaluator (status, headers, body paths)
-    scripting.ts              — JS lifecycle hooks via new Function()
+    scripting.ts              — JS lifecycle hooks via new Function() + global script file loader
     history.ts                — save/load .lazyman/history/ + diff two responses
+    pipeline.ts               — pipeline orchestration: resolve → global pre → local pre → HTTP → local post → global post → assert → save
   components/
     pane.tsx                  — bordered pane wrapper (border color, title, focus highlighting)
-  hooks/
-    useHotkeyBar.ts           — hook for publishing context-sensitive hotkey bar items
-    file-explorer.tsx         — left pane: .http file list + keyboard navigation
+    file-explorer.tsx         — left pane: dual-tab (Files + History), keyboard navigation, $EDITOR open
     request-list.tsx          — top-right-left: request block list + execution trigger
-    request-detail.tsx        — top-right-right: rendered request display (scrollable)
-    response-viewer.tsx       — bottom-right: tabbed response (Body/Headers/Cookies) + JSON tree
+    request-detail.tsx        — top-right-right: resolved request display (scrollable)
+    response-viewer.tsx       — bottom-right: tabbed response (Body/Headers/Cookies) + JSON tree + DiffView sub-component
     env-modal.tsx             — environment selector (full-screen overlay)
     help-modal.tsx            — keybinding reference (full-screen overlay, toggled by `?`)
+  hooks/
+    useHotkeyBar.ts           — hook for publishing context-sensitive hotkey bar items
+    useSearchFilter.ts        — hook for per-pane search/filter with input and filter modes
   stores/
-    appStore.ts               — SolidJS createStore: activePane, parsedRequests, response, etc.
+    appStore.ts               — SolidJS createStore: activePane, parsedRequests, response, filters, etc.
   utils/
     env-loader.ts             — load JSON environment file from .lazyman/environments/
     panes.ts                  — Pane enum (FILE_EXPLORER, REQUEST_LIST, REQUEST_DETAIL, RESPONSE_VIEWER, ENV_MODAL, HELP)
-    title.ts                  — joinTitle helper
+    title.ts                  — joinTitle helper (unused)
   style.ts                   — color constants (border, method colors, JSON syntax, status codes)
   __tests__/
-    tracer-bullet.test.ts    — full pipeline integration test
+    tracer-bullet.test.ts    — full pipeline integration test (parse → resolve → assert)
     parser/
       http-parser.test.ts    — multi-block, body, file injection, inline vars
       variable-resolver.test.ts — dot-path, cascade, unresolved vars
@@ -64,6 +67,7 @@ src/
       executor.test.ts       — HTTP via local Bun.serve()
       scripting.test.ts      — pre-request, post-response, error handling
       history.test.ts        — save, load sorted, diff
+      pipeline.test.ts       — full pipeline orchestration (scripts + HTTP + assert)
     components/
       pane.test.tsx          — rendering via testRender
       request-list.test.tsx  — request list rendering
@@ -85,10 +89,12 @@ src/
 
 - **Pane (not Panel):** Each bordered region is a Pane. Four main panes + two modal overlays (Env Selector, Help).
 - **Keyboard routing:** Components use `useKeyboard` and check `appStore.activePane` before acting.
-- **Execution pipeline:** Resolve variables → pre-request script → HTTP → post-response script → assertions → save history.
+- **Execution pipeline:** Resolve variables → global pre-request scripts → local pre-request scripts → HTTP → local post-response scripts → global post-response scripts → evaluate assertions → save history.
 - **Hotkey bar:** A single-row bar at the bottom of the TUI. Each component publishes its keybindings via `useHotkeyBar(pane, () => HotkeyItem[])`. Only the active pane's bindings are shown.
 - **Source file highlight:** The File Explorer dimly highlights the `.http` file whose requests are currently loaded in the Request List pane, even when Explorer is not focused.
-- **No centralized test-lint-typecheck scripts** — just `bun test`.
+- **consumeEnter flag:** Set by File Explorer when opening a file, consumed by Request List on Space to prevent double-navigation.
+- **Per-pane search/filter:** Each pane has its own independent filter string in `activeFilters`, persisted across pane switches. Three modes: normal, input, filter.
+- **No centralized lint/typecheck scripts** — just `bun test`.
 
 ## Code review checklist
 
@@ -99,7 +105,7 @@ Before committing any component change, run this check for `For` reactivity bugs
 rg '<For each=' -A5 src/components/*.tsx | rg 'const.*=.*(?:appStore|idx)\b'
 ```
 
-Every `const` inside a `<For>` callback that reads `appStore.*` or `idx()` must be an arrow function, not a plain value. See `CONTEXT.md:53` for the WRONG/CORRECT pattern with examples.
+Every `const` inside a `<For>` callback that reads `appStore.*` or `idx()` must be an arrow function, not a plain value. See `CONTEXT.md` for the WRONG/CORRECT pattern with examples.
 
 ```tsx
 // WRONG — snapshots once
@@ -113,23 +119,12 @@ const isSelected = () => idx() === appStore.selectedRequestIndex;
 
 Local markdown issues live in `docs/issues/`. Create a new file per issue following the refactor-plan template in the skill.
 
-## Script chain model (refactor-001)
-
-Execution pipeline phases (in order):
-1. Global pre-request scripts — `scripts/global/pre-request/*.js` (sorted by filename)
-2. Local pre-response scripts — `# @script pre-request` / `# @script post-response` inline in .http files
-3. HTTP execution
-4. Local post-response scripts (same inline mechanism)
-5. Global post-response scripts — `scripts/global/post-response/*.js` (sorted by filename)
-
-Session env flows through the entire pipeline as a single `Record<string, string>`. If a script errors the chain stops for that hook phase; the error is captured but execution continues to the next phase.
-
 ## E2E tests (agent-tui)
 
 Full-app end-to-end tests live in `e2e/`. They use [agent-tui](https://github.com/pproenca/agent-tui) to drive the TUI in a PTY — screenshot, press keys, wait for text.
 
 ```sh
-bun run test:e2e           # run e2e tests (14 assertions across 7 scenarios)
+bun run test:e2e           # run e2e tests (18 scenarios)
 ```
 
 Architecture:
