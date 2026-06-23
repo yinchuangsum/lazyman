@@ -1,8 +1,4 @@
 <p align="center">
-  <img width="536" src="https://user-images.githubusercontent.com/8456633/174470852-339b5011-5800-4bb9-a628-ff230aa8cd4e.png">
-</p>
-
-<p align="center">
   A terminal UI for HTTP requests, inspired by lazygit
   <br/>
   <a href="#features">Features</a> • <a href="#installation">Installation</a> • <a href="#usage">Usage</a> • <a href="#keybindings">Keybindings</a> • <a href="#configuration">Configuration</a>
