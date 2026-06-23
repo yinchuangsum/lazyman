@@ -4,9 +4,8 @@ if (Bun.argv.includes("init")) {
   process.exit(0);
 }
 
-import { For } from "solid-js";
 import { render, useKeyboard } from "@opentui/solid";
-import { ConsolePosition } from "@opentui/core";
+import { BoxRenderable, ConsolePosition, InputRenderable } from "@opentui/core";
 import Pane from "./components/pane";
 import FileExplorer from "./components/file-explorer";
 import RequestList from "./components/request-list";
@@ -14,12 +13,14 @@ import RequestDetail from "./components/request-detail";
 import ResponseViewer from "./components/response-viewer";
 import EnvModal from "./components/env-modal";
 import HelpModal from "./components/help-modal";
-import { appStore, setAppStore } from "./stores/appStore";
+import { appStore, mode, setAppStore } from "./stores/appStore";
 import { Pane as PaneEnum } from "./utils/panes";
 import { HIGHLIGHT_BG } from "./style";
+import { createEffect } from "solid-js";
 
 render(
   () => {
+    let inputRef!: HTMLInputElement;
     useKeyboard((key) => {
       const paneOrder = [
         PaneEnum.FILE_EXPLORER,
@@ -28,6 +29,8 @@ render(
         PaneEnum.RESPONSE_VIEWER,
       ];
       const isModal = appStore.showEnvModal || appStore.showHelpModal;
+
+      if (mode() !== "normal") return;
 
       if (key.name === "escape" && !isModal && !appStore.showSearch) {
         const pane = appStore.activePane;
@@ -79,17 +82,38 @@ render(
 
     const isModal = () => appStore.showEnvModal || appStore.showHelpModal;
 
+    createEffect(() => {
+      if (appStore.showSearch && inputRef) {
+        inputRef.focus();
+      }
+
+      if (!appStore.showSearch && inputRef) {
+        inputRef.blur();
+      }
+    });
+
     return (
       <box flexDirection="column" width="100%" height="100%">
+        <text>{mode()}</text>
         <box flexGrow={1} width="100%" flexDirection="row">
           {isModal() ? (
-            <box width="100%" height="100%" alignItems="center" justifyContent="center">
+            <box
+              width="100%"
+              height="100%"
+              alignItems="center"
+              justifyContent="center"
+            >
               {appStore.showHelpModal ? (
                 <Pane width="70%" height="85%" title="Help" focused={true}>
                   <HelpModal />
                 </Pane>
               ) : (
-                <Pane width="50%" height="60%" title="Environment Selector" focused={true}>
+                <Pane
+                  width="50%"
+                  height="60%"
+                  title="Environment Selector"
+                  focused={true}
+                >
                   <EnvModal />
                 </Pane>
               )}
@@ -141,23 +165,26 @@ render(
         </box>
         <box width="100%" height={2} flexDirection="row">
           {appStore.showSearch ? (
-            <input
-              placeholder="/search..."
-              value={appStore.searchQuery}
-              onSubmit={(val: string) => {
-                setAppStore("activeFilters", {
-                  ...appStore.activeFilters,
-                  [appStore.activePane]: val || undefined,
-                });
-                setAppStore("showSearch", false);
-              }}
-              onChange={(val: string) => setAppStore("searchQuery", val)}
-            />
-          ) : appStore.activeFilters[appStore.activePane] ? (
+            <box flexDirection="row">
+              <text width={8}>Filter: </text>
+              <input
+                ref={inputRef}
+                width={500}
+                placeholder="/search..."
+                onInput={(e) => {
+                  setAppStore("searchQuery", e);
+                  console.log(appStore.searchQuery);
+                }}
+                onSubmit={(e) => {
+                  console.log(e);
+                }}
+              />
+            </box>
+          ) : mode() === "filter" ? (
             <text fg={HIGHLIGHT_BG}>
               {" "}
-              Filter: matches for '{appStore.activeFilters[appStore.activePane]}'
-              Esc: Exit filter mode
+              Filter: matches for '{appStore.activeFilters[appStore.activePane]}
+              ' Esc: Exit filter mode
             </text>
           ) : (
             <text fg={HIGHLIGHT_BG}>

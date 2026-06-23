@@ -1,6 +1,6 @@
 import { createMemo, type Accessor } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
-import { appStore, setAppStore } from "../stores/appStore";
+import { appStore, mode, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
 
 export function useSearchFilter<T>(
@@ -11,10 +11,43 @@ export function useSearchFilter<T>(
   useKeyboard((key) => {
     if (appStore.activePane !== pane) return;
 
-    if (key.name === "slash" || key.name === "/") {
-      setAppStore("showSearch", true);
-      const existing = appStore.activeFilters[pane];
-      setAppStore("searchQuery", existing ?? "");
+    if (mode() === "normal") {
+      if (key.name === "/") {
+        const existing = appStore.activeFilters[pane];
+        setAppStore("searchQuery", existing ?? "");
+        setAppStore("showSearch", true);
+        key.preventDefault();
+      }
+    }
+
+    if (mode() === "input") {
+      if (key.name === "escape") {
+        setAppStore("showSearch", false);
+        setAppStore("searchQuery", "");
+        const { [pane]: removed, ...rest } = appStore.activeFilters;
+        console.log(rest);
+        setAppStore("activeFilters", rest);
+      }
+
+      if (key.name === "return") {
+        setAppStore("showSearch", false);
+        setAppStore("activeFilters", {
+          ...appStore.activeFilters,
+          [pane]: appStore.searchQuery,
+        });
+
+        console.log(appStore.activeFilters);
+      }
+    }
+
+    if (mode() === "filter") {
+      if (key.name === "escape") {
+        setAppStore("showSearch", false);
+        setAppStore("searchQuery", "");
+        const { [pane]: removed, ...rest } = appStore.activeFilters;
+        console.log(rest);
+        setAppStore("activeFilters", rest);
+      }
     }
   });
 

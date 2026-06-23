@@ -1,6 +1,6 @@
 import { For, createEffect, createMemo } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
-import { appStore, setAppStore } from "../stores/appStore";
+import { appStore, mode, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
 import { parseHttpFile } from "../parser/http-parser";
 import { loadHistoryEntries } from "../engine/history";
@@ -38,6 +38,10 @@ export default () => {
     }
     if (key.name === "]") {
       setAppStore("explorerTabIndex", (t) => (t === 0 ? 1 : 0));
+      return;
+    }
+
+    if (mode() !== "normal") {
       return;
     }
 

@@ -1,6 +1,13 @@
 import { createStore } from "solid-js/store";
-import type { ParsedRequest, ResponseData, AssertionResult, HistoryEntry, HotkeyItem } from "../types";
+import type {
+  ParsedRequest,
+  ResponseData,
+  AssertionResult,
+  HistoryEntry,
+  HotkeyItem,
+} from "../types";
 import { Pane } from "../utils/panes";
+import { createMemo } from "solid-js";
 
 export type AppState = {
   activePane: Pane;
@@ -54,4 +61,22 @@ export const [appStore, setAppStore] = createStore<AppState>({
   searchQuery: "",
   showSearch: false,
   activeFilters: {},
+});
+
+export const mode: () => "normal" | "input" | "filter" = createMemo(() => {
+  if (!appStore.showSearch && appStore.searchQuery === "") {
+    return "normal";
+  }
+  if (appStore.showSearch) {
+    return "input";
+  }
+
+  console.log(appStore.showSearch);
+  console.log(!!appStore.activeFilters[appStore.activePane]);
+
+  if (!appStore.showSearch && !!appStore.activeFilters[appStore.activePane]) {
+    return "filter";
+  }
+
+  return "normal";
 });
