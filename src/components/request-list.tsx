@@ -3,8 +3,10 @@ import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
 import { HIGHLIGHT_BG, HIGHLIGHT_FG } from "../style";
 import { useHotkeyBar } from "../hooks/useHotkeyBar";
+import { useSearchFilter } from "../hooks/useSearchFilter";
 import { executeRequestPipeline } from "../engine/pipeline";
 import { For, Show } from "solid-js";
+import type { ParsedRequest } from "../types";
 
 export default () => {
   useHotkeyBar(Pane.REQUEST_LIST, () => [
@@ -13,12 +15,22 @@ export default () => {
     { key: "Ctrl+Enter", label: "Execute" },
   ]);
 
+  const { filtered } = useSearchFilter(
+    Pane.REQUEST_LIST,
+    () => appStore.parsedRequests,
+    (item, query) => {
+      const q = query.toLowerCase();
+      const label = `${item.method} ${item.url} ${item.name ?? ""}`;
+      return label.toLowerCase().includes(q);
+    },
+  );
+
   useKeyboard((key) => {
     if (appStore.activePane !== Pane.REQUEST_LIST) return;
 
     if (key.name === "j" || key.name === "down") {
       setAppStore("parsedRequestIndex", (i) =>
-        Math.min(i + 1, appStore.parsedRequests.length - 1),
+        Math.min(i + 1, filtered().length - 1),
       );
     } else if (key.name === "k" || key.name === "up") {
       setAppStore("parsedRequestIndex", (i) => Math.max(i - 1, 0));
@@ -29,13 +41,13 @@ export default () => {
       }
       setAppStore("activePane", Pane.REQUEST_DETAIL);
     } else if (key.name === "return") {
-      executeSelected();
+      executeSelected(filtered());
     }
   });
 
   return (
-    <Show when={appStore.parsedRequests.length > 0}>
-      <For each={appStore.parsedRequests}>
+    <Show when={filtered().length > 0}>
+      <For each={filtered()}>
         {(reqItem, idx) => {
           const isSelected = () => idx() === appStore.parsedRequestIndex;
           const isActive = () => appStore.activePane === Pane.REQUEST_LIST;
@@ -58,9 +70,9 @@ export default () => {
   );
 };
 
-async function executeSelected() {
+async function executeSelected(requests: ParsedRequest[]) {
   const idx = appStore.parsedRequestIndex;
-  const req = appStore.parsedRequests[idx];
+  const req = requests[idx];
   if (!req) return;
 
   const result = await executeRequestPipeline(

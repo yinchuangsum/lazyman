@@ -1,10 +1,11 @@
-import { createMemo, createSignal, createEffect, For } from "solid-js";
+import { createMemo, createSignal, For } from "solid-js";
 import { useKeyboard } from "@opentui/solid";
 import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
 import { diffResponses } from "../engine/history";
 import { HIGHLIGHT_BG, HIGHLIGHT_FG } from "../style";
 import { useHotkeyBar } from "../hooks/useHotkeyBar";
+import { useSearchFilter } from "../hooks/useSearchFilter";
 
 type Tab = "body" | "headers" | "cookies";
 
@@ -85,26 +86,13 @@ export default () => {
     { key: "Tab", label: "Switch tab" },
     { key: "j/k", label: "Navigate" },
     { key: "Enter", label: "Toggle node" },
-    { key: "/", label: "Filter" },
     { key: "y", label: "Copy value" },
   ]);
 
   const [activeTab, setActiveTab] = createSignal<Tab>("body");
-  const [showFilter, setShowFilter] = createSignal(false);
-  const [filterQuery, setFilterQuery] = createSignal("");
 
   useKeyboard((key) => {
     if (appStore.activePane !== Pane.RESPONSE_VIEWER) return;
-
-    if (showFilter()) {
-      return;
-    }
-
-    if (key.name === "slash" || key.name === "/") {
-      setShowFilter(true);
-      setFilterQuery("");
-      return;
-    }
 
     if (key.name === "tab") {
       if (appStore.diffTarget) {
@@ -116,7 +104,7 @@ export default () => {
       setActiveTab(tabs[(current + 1) % tabs.length]);
     } else if (key.name === "j" || key.name === "down") {
       setAppStore("responseTreeCursor", (c) =>
-        Math.min(c + 1, visibleLines().length - 1),
+        Math.min(c + 1, filtered().length - 1),
       );
     } else if (key.name === "k" || key.name === "up") {
       setAppStore("responseTreeCursor", (c) => Math.max(c - 1, 0));
@@ -151,7 +139,7 @@ export default () => {
     return root.children ?? [];
   });
 
-  const visibleLines = createMemo(() => {
+  const allLines = createMemo(() => {
     const nodes = treeRoot();
     if (!nodes)
       return [
@@ -160,14 +148,17 @@ export default () => {
           node: null as unknown as TreeNode,
         },
       ];
-    const flat = flattenTree(nodes);
-    const q = filterQuery().toLowerCase();
-    if (!q) return flat;
-    return flat.filter((l) => l.line.toLowerCase().includes(q));
+    return flattenTree(nodes);
   });
 
+  const { filtered } = useSearchFilter(
+    Pane.RESPONSE_VIEWER,
+    allLines,
+    (item, query) => item.line.toLowerCase().includes(query.toLowerCase()),
+  );
+
   function toggleCurrentNode() {
-    const lines = visibleLines();
+    const lines = filtered();
     const cursor = appStore.responseTreeCursor;
     const item = lines[cursor];
     if (!item || !item.node) return;
@@ -178,7 +169,7 @@ export default () => {
   }
 
   function copyCurrentNode() {
-    const lines = visibleLines();
+    const lines = filtered();
     const cursor = appStore.responseTreeCursor;
     const item = lines[cursor];
     if (!item || !item.node) return;
@@ -217,18 +208,7 @@ export default () => {
 
           {activeTab() === "body" && (
             <box flexDirection="column">
-              {showFilter() ? (
-                <input
-                  placeholder="/filter..."
-                  value={filterQuery()}
-                  onSubmit={(val: string) => {
-                    setFilterQuery(val);
-                    setShowFilter(false);
-                  }}
-                  onChange={(val: string) => setFilterQuery(val)}
-                />
-              ) : null}
-              <For each={visibleLines()}>
+              <For each={filtered()}>
                 {(item, idx) => {
                   const isSelected = () =>
                     idx() === appStore.responseTreeCursor;

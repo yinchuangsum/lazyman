@@ -6,6 +6,7 @@ import { parseHttpFile } from "../parser/http-parser";
 import { loadHistoryEntries } from "../engine/history";
 import { HIGHLIGHT_BG, HIGHLIGHT_FG } from "../style";
 import { useHotkeyBar } from "../hooks/useHotkeyBar";
+import { useSearchFilter } from "../hooks/useSearchFilter";
 import type { HistoryEntry } from "../types";
 import fs from "fs";
 import path from "path";
@@ -32,11 +33,11 @@ export default () => {
     if (appStore.activePane !== Pane.FILE_EXPLORER) return;
 
     if (key.name === "[") {
-      setAppStore("explorerTabIndex", 0);
+      setAppStore("explorerTabIndex", (t) => (t === 0 ? 1 : 0));
       return;
     }
     if (key.name === "]") {
-      setAppStore("explorerTabIndex", 1);
+      setAppStore("explorerTabIndex", (t) => (t === 0 ? 1 : 0));
       return;
     }
 
@@ -120,9 +121,21 @@ export default () => {
     return historyItems() as (string | HistoryEntry)[];
   });
 
+  const { filtered } = useSearchFilter(
+    Pane.FILE_EXPLORER,
+    currentItems,
+    (item, query) => {
+      const q = query.toLowerCase();
+      if (typeof item === "string") {
+        return item.toLowerCase().includes(q);
+      }
+      return `${item.method} ${item.url}`.toLowerCase().includes(q);
+    },
+  );
+
   return (
     <box flexDirection="column">
-      <For each={currentItems()}>
+      <For each={filtered()}>
         {(item, idx) => {
           const isSelected = () =>
             appStore.explorerTabIndex === 0

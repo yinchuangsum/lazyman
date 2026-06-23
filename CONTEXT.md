@@ -48,6 +48,12 @@ A single-row status bar at the bottom of the TUI, rendered outside all panes. Di
 **Tab**:
 A sub-section within a Pane, switched with `[` and `]`. The Explorer pane has two tabs: Files and History. The active tab is indicated by a `▶` prefix in the pane border title. Each tab tracks its own cursor independently.
 
+**Search / Filter**:
+Activated by pressing `/` in any pane. An `<input>` replaces the hotkey bar for typing. Enter saves the query as a per-pane filter (filter mode). Escape clears the filter. When a filter is active, the hotkey bar shows `Filter: matches for '' Esc: Exit filter mode`. Each pane has its own independent filter, persisted across pane switches.
+
+**Filter Mode**:
+The state after pressing Enter in the search input. The pane's content is filtered by the query, the input is closed, and the hotkey bar shows the active filter. Escape exits filter mode and clears the query for that pane.
+
 **Help Modal**:
 A full-screen overlay (like the Env Modal) toggled by `?` from anywhere. Lists every pane's keybindings grouped by section. Closing returns focus to FILE_EXPLORER.
 

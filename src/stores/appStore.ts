@@ -24,6 +24,9 @@ export type AppState = {
   diffTarget: ResponseData | null;
   hotkeyBarItems: HotkeyItem[];
   consumeEnter: boolean;
+  searchQuery: string;
+  showSearch: boolean;
+  activeFilters: Partial<Record<Pane, string>>;
 };
 
 export const [appStore, setAppStore] = createStore<AppState>({
@@ -48,4 +51,7 @@ export const [appStore, setAppStore] = createStore<AppState>({
   diffTarget: null,
   hotkeyBarItems: [],
   consumeEnter: false,
+  searchQuery: "",
+  showSearch: false,
+  activeFilters: {},
 });

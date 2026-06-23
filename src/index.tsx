@@ -29,6 +29,16 @@ render(
       ];
       const isModal = appStore.showEnvModal || appStore.showHelpModal;
 
+      if (key.name === "escape" && !isModal && !appStore.showSearch) {
+        const pane = appStore.activePane;
+        if (appStore.activeFilters[pane]) {
+          const next = { ...appStore.activeFilters };
+          delete next[pane];
+          setAppStore("activeFilters", next);
+          return;
+        }
+      }
+
       if (key.name === "tab") {
         if (isModal) return;
         const current = paneOrder.indexOf(appStore.activePane);
@@ -130,12 +140,33 @@ render(
           )}
         </box>
         <box width="100%" height={2} flexDirection="row">
-          <text fg={HIGHLIGHT_BG}>
-            {" "}
-            {appStore.hotkeyBarItems
-              .map((item) => `${item.label}: ${item.key}`)
-              .join("  |  ")}
-          </text>
+          {appStore.showSearch ? (
+            <input
+              placeholder="/search..."
+              value={appStore.searchQuery}
+              onSubmit={(val: string) => {
+                setAppStore("activeFilters", {
+                  ...appStore.activeFilters,
+                  [appStore.activePane]: val || undefined,
+                });
+                setAppStore("showSearch", false);
+              }}
+              onChange={(val: string) => setAppStore("searchQuery", val)}
+            />
+          ) : appStore.activeFilters[appStore.activePane] ? (
+            <text fg={HIGHLIGHT_BG}>
+              {" "}
+              Filter: matches for '{appStore.activeFilters[appStore.activePane]}'
+              Esc: Exit filter mode
+            </text>
+          ) : (
+            <text fg={HIGHLIGHT_BG}>
+              {" "}
+              {appStore.hotkeyBarItems
+                .map((item) => `${item.label}: ${item.key}`)
+                .join("  |  ")}
+            </text>
+          )}
         </box>
       </box>
     );

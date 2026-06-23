@@ -4,6 +4,7 @@ import { appStore, setAppStore } from "../stores/appStore";
 import { Pane } from "../utils/panes";
 import { resolveRequest } from "../parser/variable-resolver";
 import { useHotkeyBar } from "../hooks/useHotkeyBar";
+import { useSearchFilter } from "../hooks/useSearchFilter";
 
 export default () => {
   useHotkeyBar(Pane.REQUEST_DETAIL, () => [
@@ -61,12 +62,18 @@ export default () => {
     return lines;
   });
 
-  const maxScroll = createMemo(() => Math.max(0, detailLines().length - 1));
+  const { filtered } = useSearchFilter(
+    Pane.REQUEST_DETAIL,
+    detailLines,
+    (line, query) => line.toLowerCase().includes(query.toLowerCase()),
+  );
+
+  const maxScroll = createMemo(() => Math.max(0, filtered().length - 1));
 
   const req = () => currentRequest();
 
   return req() ? (
-    <For each={detailLines().slice(detailScroll())}>
+    <For each={filtered().slice(detailScroll())}>
       {(line) => <text>{line}</text>}
     </For>
   ) : null;
